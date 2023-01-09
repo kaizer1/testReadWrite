@@ -1,5 +1,7 @@
 package com.lsodf.testreadwrite
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.*
 import androidx.appcompat.app.AppCompatActivity
@@ -10,10 +12,16 @@ import android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
 import android.text.TextUtils
 import android.util.Log
 import android.widget.Button
+import android.widget.ListAdapter
+import android.widget.ListView
+import android.widget.SimpleAdapter
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import java.io.*
 import java.nio.charset.Charset
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
 
     private val ENABLED_NOTIFICATION_LISTENERS = "enabled_notification_listeners"
@@ -25,17 +33,20 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.listlayout)
 
-         findViewById<Button?>(R.id.wrib).setOnClickListener {
-            println(" press writeData ")
-             writeMyFiles()
-        }
+//         findViewById<Button?>(R.id.wrib).setOnClickListener {
+//            println(" press writeData ")
+//             writeMyFiles()
+//        }
+//
+//        findViewById<Button?>(R.id.read).setOnClickListener {
+//            println(" press readData ")
+//            readMyFiles()
+//        }
 
-        findViewById<Button?>(R.id.read).setOnClickListener {
-            println(" press readData ")
-            readMyFiles()
-        }
+
+        hideSystemUI()
 
 
         imageChangeBroadcastReceiver = ImageChangeBroadcastReceiver()
@@ -47,6 +58,23 @@ class MainActivity : AppCompatActivity() {
             enableNotificationListenerAlertDialog = buildNotificationServiceAlertDialog()
             enableNotificationListenerAlertDialog!!.show()
         }
+
+        val lView : ListView = findViewById(R.id.list_vie)
+        val userList  = getUsers()
+
+        if(userList!!.isEmpty()){
+       println(" users is empty ! ")
+        }else {
+            val adapter: ListAdapter = SimpleAdapter(
+                this,
+                userList,
+                R.layout.list_r,
+                arrayOf("title", "text", "package", "time"),
+                intArrayOf(R.id.title, R.id.text, R.id.packages, R.id.time))
+            lView.adapter = adapter
+        }
+
+
 
 
     }
@@ -77,6 +105,78 @@ class MainActivity : AppCompatActivity() {
         unregisterReceiver(imageChangeBroadcastReceiver)
     }
 
+
+    @SuppressLint("InlinedApi")
+    private fun hideSystemUI() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+
+
+    fun getUsers(): ArrayList<HashMap<String, String>>? {
+
+        val userList = ArrayList<HashMap<String, String>>()
+        val `is`: FileInputStream
+        val reader: BufferedReader
+
+        val f = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "losWriteTestApps")
+        val file = File(f,
+            "loaded11.txt"
+        )
+
+            var  title : String? = ""
+            var text : String? = ""
+            var packages : String? = ""
+            var times : String? = ""
+
+        var values: Int = 1
+        if (file.exists()) {
+            `is` = FileInputStream(file)
+            reader = BufferedReader(InputStreamReader(`is`))
+            var line = reader.readLine()
+            title = line
+            while (line != null) {
+                // Log.d("! ", line )
+                line = reader.readLine()
+
+                if(values == 4){
+                    // Log.d("df", " empty read ")
+
+                    // db.insertUserDetails(title,text,packages, times)
+
+                    val user = HashMap<String, String>()
+                    user["title"] = title!!
+                    user["text"] = text!!
+                    user["package"] = packages!!
+                    user["time"] = times!!
+                    userList.add(user)
+
+
+                    title = ""
+                    text = ""
+                    packages = ""
+                    times = ""
+                    values = 0
+                }else{
+
+                    when(values){
+                        0 ->  {  title = line }
+                        1 ->  { text = line }  // println("Text $line ")
+                        2 ->  packages = line  // println("Package $line")
+                        3 ->  times = line //  println("Time $line")
+                    }
+                    values++
+                }
+            }
+        }
+
+        return userList
+    }
+
     private fun readMyFiles() {
 
 
@@ -89,11 +189,12 @@ class MainActivity : AppCompatActivity() {
         )
 
 
-        var values: Int = 0
+        var values: Int = 1
         if (file.exists()) {
             `is` = FileInputStream(file)
             reader = BufferedReader(InputStreamReader(`is`))
             var line = reader.readLine()
+            title = line
             while (line != null) {
                // Log.d("! ", line )
                 line = reader.readLine()
@@ -118,9 +219,7 @@ class MainActivity : AppCompatActivity() {
                         values++
                     }
 
-
             }
-
 
         }
 
